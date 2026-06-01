@@ -1,32 +1,37 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { Html5QrcodeScanner } from 'html5-qrcode'
 import { supabase } from '@/lib/supabase'
 
 export default function Home() {
-  const [students, setStudents] = useState<any[]>([])
-  const [attendance, setAttendance] = useState<any[]>([])
+  const [tab, setTab] = useState<'student' | 'admin'>('student')
+
+  const [adminPassword, setAdminPassword] = useState("")
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false)
+
+  const ADMIN_SECRET = "1234"
 
   const [inputId, setInputId] = useState("")
   const [currentStudent, setCurrentStudent] = useState<any>(null)
 
-  // NEW: success message state
+  const [attendance, setAttendance] = useState<any[]>([])
   const [successMessage, setSuccessMessage] = useState("")
+  const [showScanner, setShowScanner] = useState(false)
+
+  const scannerInitialized = useRef(false)
 
   useEffect(() => {
     loadAttendance()
   }, [])
 
   async function loadAttendance() {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('attendance')
       .select('*')
+      .order('created_at', { ascending: false })
 
-    if (error) {
-      console.log("ATTENDANCE ERROR FULL:", error)
-    } else {
-      setAttendance(data || [])
-    }
+    setAttendance(data || [])
   }
 
   async function verifyStudent() {
@@ -52,16 +57,10 @@ export default function Home() {
       updated_at: new Date().toISOString()
     })
 
-    if (error) {
-      console.error(error)
-    } else {
-      console.log(`${student.first_name} checked into ${location}`)
+    if (!error) {
+      setSuccessMessage(`Checked into ${location} ✔`)
       loadAttendance()
 
-      // NEW: success message
-      setSuccessMessage(`Checked into ${location} ✔`)
-
-      // NEW: reset flow after short delay
       setTimeout(() => {
         setSuccessMessage("")
         setCurrentStudent(null)
@@ -70,59 +69,200 @@ export default function Home() {
     }
   }
 
+  useEffect(() => {
+    if (!showScanner || !currentStudent || scannerInitialized.current) return
+
+    scannerInitialized.current = true
+
+    const scanner = new Html5QrcodeScanner(
+      "qr-reader",
+      { fps: 10, qrbox: 250 },
+      false
+    )
+
+    scanner.render(
+      async (decodedText) => {
+        const allowed = ["cafeteria", "park"]
+
+        if (!allowed.includes(decodedText)) {
+          alert("Invalid QR Code")
+          scanner.clear().catch(() => {})
+          scannerInitialized.current = false
+          setShowScanner(false)
+          return
+        }
+
+        scanner.clear().catch(() => {})
+        scannerInitialized.current = false
+        setShowScanner(false)
+
+        await checkIn(currentStudent, decodedText)
+      },
+      () => {}
+    )
+
+    return () => {
+      scanner.clear().catch(() => {})
+      scannerInitialized.current = false
+    }
+  }, [showScanner, currentStudent])
+
+  function unlockAdmin() {
+    if (adminPassword === ADMIN_SECRET) {
+      setIsAdminUnlocked(true)
+    } else {
+      alert("Incorrect password")
+    }
+  }
+
+  // ================================
+  // 🆕 CSV UPLOAD HANDLER
+  // ================================
+  async function handleCSVUpload(file: File) {
+    const text = await file.text()
+
+    const rows = text.split("\n").slice(1) // skip header
+
+    const students = rows
+      .map(row => row.trim())
+      .filter(Boolean)
+      .map(row => {
+        const [id, first_name, last_name] = row.split(",")
+
+        return {
+          id: id?.trim(),
+          first_name: first_name?.trim(),
+          last_name: last_name?.trim()
+        }
+      })
+
+    const { error } = await supabase
+      .from('students')
+      .upsert(students, { onConflict: 'id' })
+
+    if (error) {
+      console.error(error)
+      alert("CSV upload failed")
+    } else {
+      alert("CSV uploaded successfully")
+    }
+  }
+
   return (
     <main style={{ padding: 20 }}>
+      <h1>Walkathon Scanner</h1>
 
-      <h1>Student Check-In</h1>
+      <div style={{ marginBottom: 20 }}>
+        <button onClick={() => setTab('student')}>Student</button>
+        <button onClick={() => setTab('admin')} style={{ marginLeft: 10 }}>
+          Admin
+        </button>
+      </div>
 
-      {/* NEW: SUCCESS MESSAGE */}
-      {successMessage && (
-        <div style={{ marginBottom: 20, color: "green", fontWeight: 600 }}>
-          {successMessage}
+      {/* ================= STUDENT ================= */}
+      {tab === 'student' && (
+        <div>
+          {!currentStudent && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                verifyStudent()
+              }}
+            >
+              <input
+                placeholder="Enter Student ID"
+                value={inputId}
+                onChange={(e) => setInputId(e.target.value)}
+              />
+              <button type="submit" style={{ marginLeft: 10 }}>
+                Verify
+              </button>
+            </form>
+          )}
+
+          {currentStudent && (
+            <div>
+              <h2>
+                Welcome {currentStudent.first_name} {currentStudent.last_name}
+              </h2>
+
+              {!showScanner && (
+                <button onClick={() => setShowScanner(true)}>
+                  Scan QR Code
+                </button>
+              )}
+
+              {showScanner && (
+                <div style={{ marginTop: 20 }}>
+                  <div id="qr-reader" style={{ maxWidth: 400 }} />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
-      {/* ID ENTRY */}
-      {!currentStudent && (
-        <div style={{ marginBottom: 20 }}>
-          <input
-            placeholder="Enter Student ID"
-            value={inputId}
-            onChange={(e) => setInputId(e.target.value)}
-          />
-          <button onClick={verifyStudent} style={{ marginLeft: 10 }}>
-            Verify
-          </button>
+      {/* ================= ADMIN ================= */}
+      {tab === 'admin' && (
+        <div>
+          <h2>Admin Dashboard</h2>
+
+          {!isAdminUnlocked ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                unlockAdmin()
+              }}
+            >
+              <input
+                type="password"
+                placeholder="Enter admin password"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+              />
+              <button type="submit" style={{ marginLeft: 10 }}>
+                Unlock
+              </button>
+            </form>
+          ) : (
+            <div>
+              {/* 🆕 CSV UPLOAD */}
+              <div style={{ marginBottom: 20 }}>
+                <h3>Upload Students CSV</h3>
+
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      handleCSVUpload(e.target.files[0])
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Attendance feed */}
+              <button onClick={loadAttendance} style={{ marginBottom: 20 }}>
+                Refresh
+              </button>
+
+              <div>
+                {attendance.map((a) => (
+                  <div
+                    key={`${a.student_id}-${a.location}-${a.created_at}`}
+                    style={{
+                      padding: 8,
+                      borderBottom: '1px solid #ddd'
+                    }}
+                  >
+                    <strong>{a.student_id}</strong> → {a.location}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
-
-      {/* VERIFIED STUDENT VIEW */}
-      {currentStudent && (
-        <div style={{ marginBottom: 20 }}>
-          <h2>
-            Welcome {currentStudent.first_name} {currentStudent.last_name}
-          </h2>
-
-          <button onClick={() => checkIn(currentStudent, "cafeteria")}>
-            Cafeteria
-          </button>
-
-          <button
-            onClick={() => checkIn(currentStudent, "park")}
-            style={{ marginLeft: 10 }}
-          >
-            Park
-          </button>
-
-          <button
-            style={{ marginLeft: 10 }}
-            onClick={() => setCurrentStudent(null)}
-          >
-            Logout / Wrong ID
-          </button>
-        </div>
-      )}
-
     </main>
   )
 }
