@@ -14,7 +14,9 @@ export default function Home() {
 
   const ADMIN_SECRET =
   process.env.NEXT_PUBLIC_ADMIN_PASSWORD
-
+  
+  console.log("ADMIN SECRET:", process.env.NEXT_PUBLIC_ADMIN_PASSWORD)
+  
   const [inputId, setInputId] = useState("")
   const [currentStudent, setCurrentStudent] = useState<any>(null)
 
