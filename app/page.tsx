@@ -10,6 +10,8 @@ export default function Home() {
   const [adminPassword, setAdminPassword] = useState("")
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false)
 
+  const [showPassword, setShowPassword] = useState(false)
+
   const ADMIN_SECRET =
   process.env.NEXT_PUBLIC_ADMIN_PASSWORD
 
@@ -274,12 +276,26 @@ export default function Home() {
                 unlockAdmin()
               }}
             >
-              <input
-                type="password"
-                placeholder="Enter admin password"
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+  <input
+    type={showPassword ? "text" : "password"}
+    placeholder="Enter admin password"
+    value={adminPassword}
+    onChange={(e) => setAdminPassword(e.target.value)}
+  />
+
+  <button
+    type="button"
+    onClick={() => setShowPassword(!showPassword)}
+    style={{
+      padding: '6px 10px',
+      fontSize: 12,
+      cursor: 'pointer'
+    }}
+  >
+    {showPassword ? "Hide" : "Show"}
+  </button>
+</div>
               <button type="submit" style={{ marginLeft: 10 }}>
                 Unlock
               </button>
