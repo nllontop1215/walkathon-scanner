@@ -17,6 +17,7 @@ export default function Home() {
 
   const [attendance, setAttendance] = useState<any[]>([])
   const [successMessage, setSuccessMessage] = useState("")
+  const [checkedInLocation, setCheckedInLocation] = useState("")
   const [showScanner, setShowScanner] = useState(false)
 
   const scannerInitialized = useRef(false)
@@ -58,15 +59,10 @@ export default function Home() {
     })
 
     if (!error) {
-      setSuccessMessage(`Checked into ${location} ✔`)
-      loadAttendance()
-
-      setTimeout(() => {
-        setSuccessMessage("")
-        setCurrentStudent(null)
-        setInputId("")
-      }, 1500)
-    }
+  setCheckedInLocation(location)
+  setSuccessMessage("Check-In Successful")
+  loadAttendance()
+}
   }
 
   useEffect(() => {
@@ -115,9 +111,6 @@ export default function Home() {
     }
   }
 
-  // ================================
-  // 🆕 CSV UPLOAD HANDLER
-  // ================================
   async function handleCSVUpload(file: File) {
     const text = await file.text()
 
@@ -147,6 +140,14 @@ export default function Home() {
       alert("CSV uploaded successfully")
     }
   }
+
+  function logoutStudent() {
+  setCurrentStudent(null)
+  setInputId("")
+  setShowScanner(false)
+  setSuccessMessage("")
+  setCheckedInLocation("")
+}
 
   return (
     <main style={{ padding: 20 }}>
@@ -180,11 +181,40 @@ export default function Home() {
             </form>
           )}
 
-          {currentStudent && (
+          {currentStudent && !successMessage && (
             <div>
               <h2>
                 Welcome {currentStudent.first_name} {currentStudent.last_name}
               </h2>
+
+              {currentStudent && successMessage && (
+  <div
+    style={{
+      textAlign: 'center',
+      padding: 30
+    }}
+  >
+    <h2>✅ Successfully Checked In!</h2>
+
+    <p>
+      {currentStudent.first_name} {currentStudent.last_name}
+    </p>
+
+    <p>
+      Location: <strong>{checkedInLocation}</strong>
+    </p>
+
+    <button
+      onClick={logoutStudent}
+      style={{
+        marginTop: 20,
+        padding: '10px 20px'
+      }}
+    >
+      Log Out
+    </button>
+  </div>
+)}
 
               {!showScanner && (
                 <button onClick={() => setShowScanner(true)}>
