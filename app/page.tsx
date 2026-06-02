@@ -27,6 +27,34 @@ export default function Home() {
     loadAttendance()
   }, [])
 
+  // ================= BUTTON STYLES =================
+  const primaryBtn = {
+    padding: '10px 14px',
+    background: '#2563eb',
+    color: 'white',
+    border: 'none',
+    borderRadius: 8,
+    cursor: 'pointer'
+  }
+
+  const secondaryBtn = {
+    padding: '10px 14px',
+    background: '#e5e7eb',
+    color: '#111',
+    border: 'none',
+    borderRadius: 8,
+    cursor: 'pointer'
+  }
+
+  const dangerBtn = {
+    padding: '10px 14px',
+    background: '#fee2e2',
+    color: '#991b1b',
+    border: 'none',
+    borderRadius: 8,
+    cursor: 'pointer'
+  }
+
   async function loadAttendance() {
     const { data } = await supabase
       .from('attendance')
@@ -158,6 +186,7 @@ export default function Home() {
         padding: 20,
         display: 'flex',
         justifyContent: 'center',
+        color: '#111'
       }}
     >
       <div style={{ width: '100%', maxWidth: 700 }}>
@@ -165,45 +194,18 @@ export default function Home() {
 
         {/* ================= TAB SWITCHER ================= */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-          <button
-            onClick={() => setTab('student')}
-            style={{
-              padding: 10,
-              background: tab === 'student' ? '#2563eb' : '#e5e7eb',
-              color: tab === 'student' ? 'white' : 'black',
-              border: 'none',
-              borderRadius: 8,
-              cursor: 'pointer'
-            }}
-          >
+          <button onClick={() => setTab('student')} style={tab === 'student' ? primaryBtn : secondaryBtn}>
             Student
           </button>
 
-          <button
-            onClick={() => setTab('admin')}
-            style={{
-              padding: 10,
-              background: tab === 'admin' ? '#2563eb' : '#e5e7eb',
-              color: tab === 'admin' ? 'white' : 'black',
-              border: 'none',
-              borderRadius: 8,
-              cursor: 'pointer'
-            }}
-          >
+          <button onClick={() => setTab('admin')} style={tab === 'admin' ? primaryBtn : secondaryBtn}>
             Admin
           </button>
         </div>
 
         {/* ================= STUDENT ================= */}
         {tab === 'student' && (
-          <div
-            style={{
-              background: 'white',
-              borderRadius: 12,
-              padding: 20,
-              boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
-            }}
-          >
+          <div style={{ background: 'white', padding: 20, borderRadius: 12 }}>
             {!currentStudent && (
               <form
                 onSubmit={(e) => {
@@ -212,11 +214,13 @@ export default function Home() {
                 }}
               >
                 <input
+                  style={{ padding: 10, width: '70%' }}
                   placeholder="Enter Student ID"
                   value={inputId}
                   onChange={(e) => setInputId(e.target.value)}
                 />
-                <button type="submit" style={{ marginLeft: 10 }}>
+
+                <button type="submit" style={{ marginLeft: 10, ...primaryBtn }}>
                   Verify
                 </button>
               </form>
@@ -225,32 +229,24 @@ export default function Home() {
             {currentStudent && !successMessage && (
               <div>
                 <h2>
-                  Welcome {currentStudent.first_name}{' '}
-                  {currentStudent.last_name}
+                  Welcome {currentStudent.first_name} {currentStudent.last_name}
                 </h2>
 
-                <button
-                  onClick={logoutStudent}
-                  style={{ marginBottom: 20 }}
-                >
-                  Wrong Student / Log Out
-                </button>
-
-                {!showScanner && (
-                  <button onClick={() => setShowScanner(true)}>
-                    Scan QR Code
+                {/* FIXED ORDER */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                  <button onClick={logoutStudent} style={dangerBtn}>
+                    Wrong Student / Log Out
                   </button>
-                )}
+
+                  {!showScanner && (
+                    <button onClick={() => setShowScanner(true)} style={primaryBtn}>
+                      Scan QR Code
+                    </button>
+                  )}
+                </div>
 
                 {showScanner && (
-                  <div
-                    style={{
-                      marginTop: 20,
-                      padding: 10,
-                      border: '2px dashed #ddd',
-                      borderRadius: 10
-                    }}
-                  >
+                  <div style={{ padding: 10, border: '2px dashed #ddd', borderRadius: 10 }}>
                     <div id="qr-reader" style={{ maxWidth: 400 }} />
                   </div>
                 )}
@@ -267,27 +263,12 @@ export default function Home() {
                   border: '1px solid #10b981'
                 }}
               >
-                <h2 style={{ color: '#065f46' }}>
-                  ✅ Checked In Successfully
-                </h2>
+                <h2>✅ Checked In Successfully</h2>
 
-                <p>
-                  {currentStudent.first_name}{' '}
-                  {currentStudent.last_name}
-                </p>
+                <p>{currentStudent.first_name} {currentStudent.last_name}</p>
+                <p><strong>{checkedInLocation}</strong></p>
 
-                <p>
-                  Location:{' '}
-                  <strong>{checkedInLocation}</strong>
-                </p>
-
-                <button
-                  onClick={logoutStudent}
-                  style={{
-                    marginTop: 20,
-                    padding: '10px 20px'
-                  }}
-                >
+                <button onClick={logoutStudent} style={{ marginTop: 20, ...primaryBtn }}>
                   Log Out
                 </button>
               </div>
@@ -297,46 +278,34 @@ export default function Home() {
 
         {/* ================= ADMIN ================= */}
         {tab === 'admin' && (
-          <div
-            style={{
-              background: 'white',
-              borderRadius: 12,
-              padding: 20,
-              boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
-            }}
-          >
+          <div style={{ background: 'white', padding: 20, borderRadius: 12 }}>
             <h2>Admin Dashboard</h2>
 
             {!isAdminUnlocked ? (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  unlockAdmin()
-                }}
-              >
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                unlockAdmin()
+              }}>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <input
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter admin password"
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
+                    style={{ padding: 10 }}
                   />
 
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={secondaryBtn}>
                     {showPassword ? "Hide" : "Show"}
                   </button>
                 </div>
 
-                <button type="submit" style={{ marginTop: 10 }}>
+                <button type="submit" style={{ marginTop: 10, ...primaryBtn }}>
                   Unlock
                 </button>
               </form>
             ) : (
               <div>
-                {/* CSV UPLOAD */}
                 <div style={{ marginBottom: 20 }}>
                   <h3>Upload Students CSV</h3>
 
@@ -344,34 +313,22 @@ export default function Home() {
                     type="file"
                     accept=".csv"
                     onChange={(e) => {
-                      if (e.target.files?.[0]) {
-                        handleCSVUpload(e.target.files[0])
-                      }
+                      if (e.target.files?.[0]) handleCSVUpload(e.target.files[0])
                     }}
                   />
                 </div>
 
-                {/* ACTIONS */}
-                <div style={{ marginBottom: 20 }}>
-                  <button onClick={loadAttendance}>
-                    Refresh
-                  </button>
-                </div>
+                <button onClick={loadAttendance} style={{ ...secondaryBtn, marginBottom: 20 }}>
+                  Refresh
+                </button>
 
-                {/* FEED */}
                 <div>
                   {attendance.map((a) => (
                     <div
                       key={`${a.student_id}-${a.location}-${a.created_at}`}
-                      style={{
-                        padding: 12,
-                        borderBottom: '1px solid #eee',
-                        lineHeight: 1.4
-                      }}
+                      style={{ padding: 12, borderBottom: '1px solid #eee' }}
                     >
-                      <strong>
-                        {a.students?.first_name} {a.students?.last_name}
-                      </strong>
+                      <strong>{a.students?.first_name} {a.students?.last_name}</strong>
                       <br />
                       <small>ID: {a.student_id}</small> → {a.location}
                     </div>
