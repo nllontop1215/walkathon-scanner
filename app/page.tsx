@@ -10,7 +10,8 @@ export default function Home() {
   const [adminPassword, setAdminPassword] = useState("")
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false)
 
-  const ADMIN_SECRET = "1234"
+  const ADMIN_SECRET =
+  process.env.NEXT_PUBLIC_ADMIN_PASSWORD
 
   const [inputId, setInputId] = useState("")
   const [currentStudent, setCurrentStudent] = useState<any>(null)
