@@ -9,11 +9,14 @@ export default function Home() {
 
   const [adminPassword, setAdminPassword] = useState("")
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false)
+
   const [showPassword, setShowPassword] = useState(false)
 
   const ADMIN_SECRET =
-    process.env.NEXT_PUBLIC_ADMIN_PASSWORD
-
+  process.env.NEXT_PUBLIC_ADMIN_PASSWORD
+  
+  console.log("ADMIN SECRET:", process.env.NEXT_PUBLIC_ADMIN_PASSWORD)
+  
   const [inputId, setInputId] = useState("")
   const [currentStudent, setCurrentStudent] = useState<any>(null)
 
@@ -28,20 +31,10 @@ export default function Home() {
     loadAttendance()
   }, [])
 
-  // ================= LOAD ATTENDANCE (UPDATED WITH JOIN) =================
   async function loadAttendance() {
     const { data } = await supabase
       .from('attendance')
-      .select(`
-        id,
-        student_id,
-        location,
-        created_at,
-        students (
-          first_name,
-          last_name
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
 
     setAttendance(data || [])
@@ -71,10 +64,10 @@ export default function Home() {
     })
 
     if (!error) {
-      setCheckedInLocation(location)
-      setSuccessMessage("Check-In Successful")
-      loadAttendance()
-    }
+  setCheckedInLocation(location)
+  setSuccessMessage("Check-In Successful")
+  loadAttendance()
+}
   }
 
   useEffect(() => {
@@ -126,7 +119,7 @@ export default function Home() {
   async function handleCSVUpload(file: File) {
     const text = await file.text()
 
-    const rows = text.split("\n").slice(1)
+    const rows = text.split("\n").slice(1) // skip header
 
     const students = rows
       .map(row => row.trim())
@@ -153,41 +146,13 @@ export default function Home() {
     }
   }
 
-  // ================= CSV EXPORT =================
-  function exportCSV() {
-    const header = ["student_id", "first_name", "last_name", "location", "created_at"]
-
-    const rows = attendance.map(a => [
-      a.student_id,
-      a.students?.first_name || "",
-      a.students?.last_name || "",
-      a.location,
-      a.created_at
-    ])
-
-    const csvContent =
-      [header, ...rows]
-        .map(e => e.join(","))
-        .join("\n")
-
-    const blob = new Blob([csvContent], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "walkathon-attendance.csv"
-    a.click()
-
-    URL.revokeObjectURL(url)
-  }
-
   function logoutStudent() {
-    setCurrentStudent(null)
-    setInputId("")
-    setShowScanner(false)
-    setSuccessMessage("")
-    setCheckedInLocation("")
-  }
+  setCurrentStudent(null)
+  setInputId("")
+  setShowScanner(false)
+  setSuccessMessage("")
+  setCheckedInLocation("")
+}
 
   return (
     <main style={{ padding: 20 }}>
@@ -201,74 +166,105 @@ export default function Home() {
       </div>
 
       {/* ================= STUDENT ================= */}
-      {tab === 'student' && (
-        <div>
-          {!currentStudent && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                verifyStudent()
-              }}
-            >
-              <input
-                placeholder="Enter Student ID"
-                value={inputId}
-                onChange={(e) => setInputId(e.target.value)}
-              />
-              <button type="submit" style={{ marginLeft: 10 }}>
-                Verify
-              </button>
-            </form>
-          )}
+{tab === 'student' && (
+  <div>
 
-          {currentStudent && !successMessage && (
-            <div>
-              <h2>
-                Welcome {currentStudent.first_name}{' '}
-                {currentStudent.last_name}
-              </h2>
+    {!currentStudent && (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          verifyStudent()
+        }}
+      >
+        <input
+          placeholder="Enter Student ID"
+          value={inputId}
+          onChange={(e) => setInputId(e.target.value)}
+        />
 
-              <button onClick={logoutStudent} style={{ marginBottom: 20 }}>
-                Wrong Student / Log Out
-              </button>
+        <button
+          type="submit"
+          style={{ marginLeft: 10 }}
+        >
+          Verify
+        </button>
+      </form>
+    )}
 
-              {!showScanner && (
-                <button onClick={() => setShowScanner(true)}>
-                  Scan QR Code
-                </button>
-              )}
+    {currentStudent && !successMessage && (
+      <div>
+        <h2>
+          Welcome {currentStudent.first_name}{' '}
+          {currentStudent.last_name}
+        </h2>
 
-              {showScanner && (
-                <div style={{ marginTop: 20 }}>
-                  <div id="qr-reader" style={{ maxWidth: 400 }} />
-                </div>
-              )}
-            </div>
-          )}
+        <button
+          onClick={logoutStudent}
+          style={{
+            marginBottom: 20
+          }}
+        >
+          Wrong Student / Log Out
+        </button>
 
-          {currentStudent && successMessage && (
-            <div style={{ textAlign: 'center', padding: 30 }}>
-              <h2>✅ Successfully Checked In!</h2>
+        <br />
 
-              <p>
-                {currentStudent.first_name}{' '}
-                {currentStudent.last_name}
-              </p>
+        {!showScanner && (
+          <button
+            onClick={() => setShowScanner(true)}
+          >
+            Scan QR Code
+          </button>
+        )}
 
-              <p>
-                Location: <strong>{checkedInLocation}</strong>
-              </p>
+        {showScanner && (
+          <div style={{ marginTop: 20 }}>
+            <div
+              id="qr-reader"
+              style={{ maxWidth: 400 }}
+            />
+          </div>
+        )}
+      </div>
+    )}
 
-              <button
-                onClick={logoutStudent}
-                style={{ marginTop: 20, padding: '10px 20px' }}
-              >
-                Log Out
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+    {currentStudent && successMessage && (
+      <div
+        style={{
+          textAlign: 'center',
+          padding: 30
+        }}
+      >
+        <h2>
+          ✅ Successfully Checked In!
+        </h2>
+
+        <p>
+          {currentStudent.first_name}{' '}
+          {currentStudent.last_name}
+        </p>
+
+        <p>
+          Location:{' '}
+          <strong>
+            {checkedInLocation}
+          </strong>
+        </p>
+
+        <button
+          onClick={logoutStudent}
+          style={{
+            marginTop: 20,
+            padding: '10px 20px'
+          }}
+        >
+          Log Out
+        </button>
+      </div>
+    )}
+
+  </div>
+)}
 
       {/* ================= ADMIN ================= */}
       {tab === 'admin' && (
@@ -283,28 +279,32 @@ export default function Home() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter admin password"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                />
+  <input
+    type={showPassword ? "text" : "password"}
+    placeholder="Enter admin password"
+    value={adminPassword}
+    onChange={(e) => setAdminPassword(e.target.value)}
+  />
 
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? "Hide" : "Show"}
-                </button>
-              </div>
-
-              <button type="submit" style={{ marginTop: 10 }}>
+  <button
+    type="button"
+    onClick={() => setShowPassword(!showPassword)}
+    style={{
+      padding: '6px 10px',
+      fontSize: 12,
+      cursor: 'pointer'
+    }}
+  >
+    {showPassword ? "Hide" : "Show"}
+  </button>
+</div>
+              <button type="submit" style={{ marginLeft: 10 }}>
                 Unlock
               </button>
             </form>
           ) : (
             <div>
-              {/* CSV UPLOAD */}
+              {/* 🆕 CSV UPLOAD */}
               <div style={{ marginBottom: 20 }}>
                 <h3>Upload Students CSV</h3>
 
@@ -319,18 +319,11 @@ export default function Home() {
                 />
               </div>
 
-              {/* ACTIONS */}
-              <div style={{ marginBottom: 20 }}>
-                <button onClick={loadAttendance}>
-                  Refresh
-                </button>
+              {/* Attendance feed */}
+              <button onClick={loadAttendance} style={{ marginBottom: 20 }}>
+                Refresh
+              </button>
 
-                <button onClick={exportCSV} style={{ marginLeft: 10 }}>
-                  Export CSV
-                </button>
-              </div>
-
-              {/* ATTENDANCE FEED */}
               <div>
                 {attendance.map((a) => (
                   <div
@@ -340,11 +333,7 @@ export default function Home() {
                       borderBottom: '1px solid #ddd'
                     }}
                   >
-                    <strong>
-                      {a.students?.first_name} {a.students?.last_name}
-                    </strong>
-                    <br />
-                    <small>ID: {a.student_id}</small> → {a.location}
+                    <strong>{a.student_id}</strong> → {a.location}
                   </div>
                 ))}
               </div>
