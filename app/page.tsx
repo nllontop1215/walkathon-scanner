@@ -161,76 +161,105 @@ export default function Home() {
       </div>
 
       {/* ================= STUDENT ================= */}
-      {tab === 'student' && (
-        <div>
-          {!currentStudent && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                verifyStudent()
-              }}
-            >
-              <input
-                placeholder="Enter Student ID"
-                value={inputId}
-                onChange={(e) => setInputId(e.target.value)}
-              />
-              <button type="submit" style={{ marginLeft: 10 }}>
-                Verify
-              </button>
-            </form>
-          )}
+{tab === 'student' && (
+  <div>
 
-          {currentStudent && !successMessage && (
-            <div>
-              <h2>
-                Welcome {currentStudent.first_name} {currentStudent.last_name}
-              </h2>
+    {!currentStudent && (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          verifyStudent()
+        }}
+      >
+        <input
+          placeholder="Enter Student ID"
+          value={inputId}
+          onChange={(e) => setInputId(e.target.value)}
+        />
 
-              {currentStudent && successMessage && (
-  <div
-    style={{
-      textAlign: 'center',
-      padding: 30
-    }}
-  >
-    <h2>✅ Successfully Checked In!</h2>
+        <button
+          type="submit"
+          style={{ marginLeft: 10 }}
+        >
+          Verify
+        </button>
+      </form>
+    )}
 
-    <p>
-      {currentStudent.first_name} {currentStudent.last_name}
-    </p>
+    {currentStudent && !successMessage && (
+      <div>
+        <h2>
+          Welcome {currentStudent.first_name}{' '}
+          {currentStudent.last_name}
+        </h2>
 
-    <p>
-      Location: <strong>{checkedInLocation}</strong>
-    </p>
+        <button
+          onClick={logoutStudent}
+          style={{
+            marginBottom: 20
+          }}
+        >
+          Wrong Student / Log Out
+        </button>
 
-    <button
-      onClick={logoutStudent}
-      style={{
-        marginTop: 20,
-        padding: '10px 20px'
-      }}
-    >
-      Log Out
-    </button>
+        <br />
+
+        {!showScanner && (
+          <button
+            onClick={() => setShowScanner(true)}
+          >
+            Scan QR Code
+          </button>
+        )}
+
+        {showScanner && (
+          <div style={{ marginTop: 20 }}>
+            <div
+              id="qr-reader"
+              style={{ maxWidth: 400 }}
+            />
+          </div>
+        )}
+      </div>
+    )}
+
+    {currentStudent && successMessage && (
+      <div
+        style={{
+          textAlign: 'center',
+          padding: 30
+        }}
+      >
+        <h2>
+          ✅ Successfully Checked In!
+        </h2>
+
+        <p>
+          {currentStudent.first_name}{' '}
+          {currentStudent.last_name}
+        </p>
+
+        <p>
+          Location:{' '}
+          <strong>
+            {checkedInLocation}
+          </strong>
+        </p>
+
+        <button
+          onClick={logoutStudent}
+          style={{
+            marginTop: 20,
+            padding: '10px 20px'
+          }}
+        >
+          Log Out
+        </button>
+      </div>
+    )}
+
   </div>
 )}
-
-              {!showScanner && (
-                <button onClick={() => setShowScanner(true)}>
-                  Scan QR Code
-                </button>
-              )}
-
-              {showScanner && (
-                <div style={{ marginTop: 20 }}>
-                  <div id="qr-reader" style={{ maxWidth: 400 }} />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ================= ADMIN ================= */}
       {tab === 'admin' && (
